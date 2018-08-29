@@ -104,7 +104,7 @@ def index(request, uid):
     feed = {
         'version': 'https://jsonfeed.org/version/1',
         'title': b.find('h1', class_='ProfileHeaderCard-name').text + '的推特',
-        'description': b.find('p', class_='ProfileHeaderCard-bio'),
+        'description': b.find('p', class_='ProfileHeaderCard-bio').text,
         'home_page_url': twitter_url,
         'items': []
     }
