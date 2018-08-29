@@ -14,6 +14,8 @@ TWITRSS_URL = 'https://twitrss.me/twitter_user_to_rss/?user={uid}'
 
 logging.basicConfig(level=logging.INFO)
 
+left_border = '<div style="border-left: 3px solid gray; padding-left: 1em;">{}</div>'
+
 
 def format_title(description):
     b = BeautifulSoup(description, 'html.parser')
@@ -44,8 +46,6 @@ def convert_url(tweet_text):
 
 def format_status(url, max_iter):
     logging.info('正在抓取网页：' + url)
-    if max_iter <= 0:
-        return '<font color="red">！！！警告：转发层数太深，请打开网页查看！！！</font>'
     bst = BeautifulSoup(requests.get(url).content, 'html.parser')
     permalink_tweet = bst.find('div', class_='permalink-tweet-container')
     # 推特内容
@@ -59,16 +59,18 @@ def format_status(url, max_iter):
     # 引用推特内容
     quote_author = permalink_tweet.find('div', class_='QuoteTweet-originalAuthor')
     if quote_author:
-        quote_url = permalink_tweet.find('a', class_='QuoteTweet-link')
-        quote_status_url = TWITTER_URL.format(quote_url.get('href')[1:])
-        quote_author_username = quote_author.find('span', class_='username').b.text
-        quote_author_fullname = quote_author.find('b', class_='QuoteTweet-fullname').text
-        description += ('<br/><br/><div style="border-left: 3px solid gray; padding-left: 1em;">'
-                        '转发@<a href={quote_author_url}>{username}</a>：{quote_text}'
-                        '</div>'
-                        ).format(quote_author_url=TWITTER_USER_URL.format(uid=quote_author_username),
-                                 username=quote_author_fullname,
-                                 quote_text=format_status(quote_status_url, max_iter - 1))
+        if max_iter <= 0:
+            description += '<br/>' * 2 + left_border.format('！！！警告：转发层数太深，请打开网页查看！！！')
+        else:
+            quote_url = permalink_tweet.find('a', class_='QuoteTweet-link')
+            quote_status_url = TWITTER_URL.format(quote_url.get('href')[1:])
+            quote_author_username = quote_author.find('span', class_='username').b.text
+            quote_author_fullname = quote_author.find('b', class_='QuoteTweet-fullname').text
+            description += '<br/>' * 2 + left_border.format(
+                '转发@<a href={quote_author_url}>{username}</a>：{quote_text}'.format(
+                    quote_author_url=TWITTER_USER_URL.format(uid=quote_author_username),
+                    username=quote_author_fullname,
+                    quote_text=format_status(quote_status_url, max_iter - 1)))
     description.replace(r'\n', '<br/>')
     media = permalink_tweet.find('div', class_='AdaptiveMediaOuterContainer')
     if media:
@@ -86,10 +88,12 @@ def format_twitter(uid, url):
     description = format_status(url, 4)
     # 纯转发
     if url.split('/')[3] != uid:
-        description = ('转发<br/><br/><div style="border-left: 3px solid gray; padding-left: 1em;">'
-                       '@<a href={url}>{uid}</a>：{description}'
-                       '</div>'
-                       ).format(uid=uid, url=TWITTER_URL.format(uid), description=description)
+        description = '转发' + '<br/>' * 2 + left_border.format(
+            '@<a href={url}>{uid}</a>：{description}'.format(
+                uid=url.split('/')[3],
+                url=TWITTER_URL.format(uid),
+                description=description)
+        )
     return description
 
 
