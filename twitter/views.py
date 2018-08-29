@@ -98,7 +98,7 @@ def format_twitter(uid, url):
 
 def index(request, uid):
     twitter_url = TWITTER_URL.format(uid)
-    b = BeautifulSoup(requests.get(twitter_url).content, 'html')
+    b = BeautifulSoup(requests.get(twitter_url).content, 'html.parser')
     feed = {
         'version': 'https://jsonfeed.org/version/1',
         'title': b.find('h1', class_='ProfileHeaderCard-name').text + '的推特',
