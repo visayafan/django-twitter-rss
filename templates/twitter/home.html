@@ -57,12 +57,7 @@
             {% if url %}
                 <div class="result">
                     <p>RSS订阅地址：</p>
-                    <div class="input-group">
-                        <input id="clip" type="text" class="form-control" name="url" readonly="true"/>
-                        <span class="input-group-btn">
-                            <button data-clipboard-target="#clip" class="btn btn-default" type="submit">复制到剪切板</button>
-                        </span>
-                    </div>
+                    <input id="clip" type="text" class="form-control" name="url"/>
                     <ul class="reader-list">
                         <li><a id="inoreader" href="" target="_blank">订阅到Inoreader</a></li>
                         <li><a id="feedly" href="" target="_blank">订阅到Feedly</a></li>
@@ -74,15 +69,13 @@
     </div>
 </div>
 <div class="navbar navbar-fixed-bottom">
-        <p class="text-mute text-center">Powered by <a href="https://github.com/visayafan/django-twitter-rss" target="_blank">django-twitter-rss</a>. Inspired by  <a href="https://github.com/zgq354/weibo-rss" target="_blank">weibo-rss</a>. .
-        </p>
+    <p class="text-mute text-center">Powered by <a href="https://github.com/visayafan/django-twitter-rss" target="_blank">django-twitter-rss</a>. Inspired by <a
+            href="https://github.com/zgq354/weibo-rss" target="_blank">weibo-rss</a>. .
+    </p>
 </div>
 </body>
 <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
-<script type='text/javascript' src="https://cdn.staticfile.org/clipboard.js/1.5.15/clipboard.min.js"></script>
 <script type='text/javascript'>
-    new Clipboard(".btn");
-
     let prefix = {
         inoreader: "https://www.inoreader.com/?add_feed=",
         feedly: "https://feedly.com/i/subscription/",
