@@ -12,6 +12,8 @@ TWITTER_URL = 'https://twitter.com/{}'
 TWITTER_USER_URL = 'https://twitter.com/{uid}'
 TWITRSS_URL = 'https://twitrss.me/twitter_user_to_rss/?user={uid}'
 
+logging.basicConfig(level=logging.INFO)
+
 
 def format_title(description):
     b = BeautifulSoup(description, 'html.parser')
@@ -25,7 +27,7 @@ def format_title(description):
         return b.text
     # 否则取第1句的前TITLE_MAX_LENGTH个字符作为标题
     title = cleaned_des[:TITLE_MAX_LENGTH]
-    sear = re.search(r'[,.!?;，。！？；\s]', title[::-1])
+    sear = re.search(r'[,.!?;，。！？；]', title[::-1])
     if sear:
         title = title[:-sear.end()]
     return title
@@ -41,6 +43,7 @@ def convert_url(tweet_text):
 
 
 def format_status(url, max_iter):
+    logging.info('正在抓取网页：' + url)
     if max_iter <= 0:
         return '<font color="red">！！！警告：转发层数太深，请打开网页查看！！！</font>'
     bst = BeautifulSoup(requests.get(url).content, 'html.parser')
@@ -57,7 +60,7 @@ def format_status(url, max_iter):
     quote_author = permalink_tweet.find('div', class_='QuoteTweet-originalAuthor')
     if quote_author:
         quote_url = permalink_tweet.find('a', class_='QuoteTweet-link')
-        quote_status_url = TWITTER_URL.format(quote_url.get('href'))
+        quote_status_url = TWITTER_URL.format(quote_url.get('href')[1:])
         quote_author_username = quote_author.find('span', class_='username').b.text
         quote_author_fullname = quote_author.find('b', class_='QuoteTweet-fullname').text
         description += ('<br/><br/><div style="border-left: 3px solid gray; padding-left: 1em;">'
@@ -65,7 +68,7 @@ def format_status(url, max_iter):
                         '</div>'
                         ).format(quote_author_url=TWITTER_USER_URL.format(uid=quote_author_username),
                                  username=quote_author_fullname,
-                                 quote_text=format_status(quote_status_url, max_iter-1))
+                                 quote_text=format_status(quote_status_url, max_iter - 1))
     description.replace(r'\n', '<br/>')
     media = permalink_tweet.find('div', class_='AdaptiveMediaOuterContainer')
     if media:
@@ -102,15 +105,15 @@ def index(request, uid):
     }
     for item in b.find_all('item'):
         item_url = item.link.text
-        logging.warning(item_url)
         feed_item = {
             'id': item_url,
             'url': item_url
         }
         if cache.get(item_url):
-            logging.warning('缓存'+item_url)
+            logging.info('缓存' + item_url)
             feed_item['content_html'] = cache.get(item_url)
         else:
+            logging.info(item_url)
             description = format_twitter(uid, item_url)
             cache.set(item_url, description)
             feed_item['content_html'] = description
