@@ -40,7 +40,9 @@ def convert_url(tweet_text):
     return tweet_text
 
 
-def format_status(url):
+def format_status(url, max_iter):
+    if max_iter <= 0:
+        return '嵌套太深'
     bst = BeautifulSoup(requests.get(url).content, 'html.parser')
     permalink_tweet = bst.find('div', class_='permalink-tweet-container')
     # 推特内容
@@ -62,7 +64,7 @@ def format_status(url):
                         '</div>'
                         ).format(quote_author_url=TWITTER_USER_URL.format(uid=quote_author_username),
                                  quote_author_username=quote_author_username,
-                                 quote_text=format_status(quote_status_url))
+                                 quote_text=format_status(quote_status_url, max_iter-1))
     description.replace(r'\n', '<br/>')
     media = permalink_tweet.find('div', class_='AdaptiveMediaOuterContainer')
     if media:
@@ -77,7 +79,7 @@ def format_status(url):
 
 
 def format_twitter(uid, url):
-    description = format_status(url)
+    description = format_status(url, 4)
     # 纯转发
     if url.split('/')[3] != uid:
         description = ('转发<br/><br/><div style="border-left: 3px solid gray; padding-left: 1em;">'
