@@ -3,6 +3,7 @@ import re
 
 import requests
 from bs4 import BeautifulSoup
+from django.core.cache import cache
 from django.http import JsonResponse
 from hanziconv import HanziConv
 
@@ -76,6 +77,17 @@ def format_status(url):
     return description
 
 
+def format_twitter(uid, url):
+    description = format_status(url)
+    # 纯转发
+    if url.split('/')[3] != uid:
+        description = ('<div style="border-left: 3px solid gray; padding-left: 1em;">'
+                       '转发@<a href={url}>{uid}</a>：{description}'
+                       '</div>'
+                       ).format(uid=uid, url=TWITTER_URL.format(uid), description=description)
+    return description
+
+
 def index(request, uid):
     twitter_url = TWITRSS_URL.format(uid=uid)
     b = BeautifulSoup(requests.get(twitter_url).content, 'xml')
@@ -89,14 +101,16 @@ def index(request, uid):
     for item in b.find_all('item'):
         logging.warning(item.link.text)
         item_url = item.link.text
-        description = format_status(item.link.text)
-        if item_url.split('/')[3] != uid:
-            description = '转推：' + description
         feed_item = {
             'id': item_url,
-            'url': item_url,
-            'title': format_title(description),
-            'content_html': description
+            'url': item_url
         }
+        if cache.get(item_url):
+            feed_item['content_html'] = cache.get(item_url)
+        else:
+            description = format_twitter(uid, item_url)
+            cache.set(item_url, description)
+            feed_item['content_html'] = description
+        feed_item['title'] = format_title(feed_item['content_html'])
         feed['items'].append(feed_item)
     return JsonResponse(feed)
