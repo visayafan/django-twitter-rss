@@ -9,8 +9,7 @@ from hanziconv import HanziConv
 
 TITLE_MAX_LENGTH = 30
 TWITTER_URL = 'https://twitter.com/{}'
-TWITTER_USER_URL = 'https://twitter.com/{uid}'
-TWITRSS_URL = 'https://twitrss.me/twitter_user_to_rss/?user={uid}'
+TWITTER_STATUS_URL = 'https://twitter.com/{}/status/{}'
 
 logging.basicConfig(level=logging.INFO)
 
@@ -68,7 +67,7 @@ def format_status(url, max_iter):
             quote_author_fullname = quote_author.find('b', class_='QuoteTweet-fullname').text
             description += '<br/>' * 2 + left_border.format(
                 '转发@<a href={quote_author_url}>{username}</a>：{quote_text}'.format(
-                    quote_author_url=TWITTER_USER_URL.format(uid=quote_author_username),
+                    quote_author_url=TWITTER_URL.format(quote_author_username),
                     username=quote_author_fullname,
                     quote_text=format_status(quote_status_url, max_iter - 1)))
     description.replace(r'\n', '<br/>')
@@ -79,11 +78,6 @@ def format_status(url, max_iter):
         if ts:
             ts.extract()
         description += '<br/>' + str(media).replace('<img', '<br/><img')
-    iframe = permalink_tweet.find('iframe')
-    if iframe:
-        body = iframe.find('body')
-        if body:
-            description += str(body)
     # 繁体转简体
     description = HanziConv.toSimplified(description)
     return description
@@ -103,17 +97,17 @@ def format_twitter(uid, url):
 
 
 def index(request, uid):
-    twitter_url = TWITRSS_URL.format(uid=uid)
-    b = BeautifulSoup(requests.get(twitter_url).content, 'xml')
+    twitter_url = TWITTER_URL.format(uid)
+    b = BeautifulSoup(requests.get(twitter_url).content, 'html')
     feed = {
         'version': 'https://jsonfeed.org/version/1',
-        'title': uid + "'s twitter",
-        'description': uid + "'s twitter",
-        'home_page_url': b.rss.channel.link.text,
+        'title': b.find('h1', class_='ProfileHeaderCard-name').text + '的推特',
+        'description': b.find('h2', class_='ProfileHeaderCard-bio'),
+        'home_page_url': twitter_url,
         'items': []
     }
-    for item in b.find_all('item'):
-        item_url = item.link.text
+    for item in b.find_all('li', class_='js-stream-item'):
+        item_url = TWITTER_STATUS_URL.format(uid, item.get('data-item-id'))
         feed_item = {
             'id': item_url,
             'url': item_url

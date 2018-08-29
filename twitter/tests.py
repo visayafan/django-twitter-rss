@@ -1,7 +1,9 @@
-from twitter.views import format_status, format_title
+import requests
+from bs4 import BeautifulSoup
 
-d = format_status('https://twitter.com/KenWong_/status/1034722889893732352')
-print(d)
-t = format_title(d)
-print('-'*100)
-print(t)
+url = 'https://twitter.com/Cat55Grumpy/status/1027165193133084672'
+b = BeautifulSoup(requests.get(url).content,'html.parser')
+permalink_tweet = b.find('div', class_='permalink-tweet-container')
+print(permalink_tweet.prettify())
+iframe = permalink_tweet.find('iframe')
+print(iframe)
