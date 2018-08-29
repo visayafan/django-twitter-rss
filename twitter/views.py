@@ -66,12 +66,7 @@ def format_status(url):
     description.replace(r'\n', '<br/>')
     media = permalink_tweet.find('div', class_='AdaptiveMediaOuterContainer')
     if media:
-        # 图片前加两个换行
-        images = media.find_all('img')
-        if images:
-            for img in images:
-                img.replace_with('<br/><br/>' + str(img))
-        description += str(media)
+        description += '<br/>' + str(media).replace('<img', '<br/><img')
     # 繁体转简体
     description = HanziConv.toSimplified(description)
     return description
@@ -81,8 +76,8 @@ def format_twitter(uid, url):
     description = format_status(url)
     # 纯转发
     if url.split('/')[3] != uid:
-        description = ('<div style="border-left: 3px solid gray; padding-left: 1em;">'
-                       '转发@<a href={url}>{uid}</a>：{description}'
+        description = ('转发<div style="border-left: 3px solid gray; padding-left: 1em;">'
+                       '@<a href={url}>{uid}</a>：{description}'
                        '</div>'
                        ).format(uid=uid, url=TWITTER_URL.format(uid), description=description)
     return description
