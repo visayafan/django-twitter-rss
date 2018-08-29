@@ -42,7 +42,7 @@ def convert_url(tweet_text):
 
 def format_status(url, max_iter):
     if max_iter <= 0:
-        return '嵌套太深'
+        return '<font color="red">！！！警告：转发层数太深，请打开网页查看！！！</font>'
     bst = BeautifulSoup(requests.get(url).content, 'html.parser')
     permalink_tweet = bst.find('div', class_='permalink-tweet-container')
     # 推特内容
@@ -59,11 +59,12 @@ def format_status(url, max_iter):
         quote_url = permalink_tweet.find('a', class_='QuoteTweet-link')
         quote_status_url = TWITTER_URL.format(quote_url.get('href'))
         quote_author_username = quote_author.find('span', class_='username').b.text
+        quote_author_fullname = quote_author.find('b', class_='QuoteTweet-fullname').text
         description += ('<br/><br/><div style="border-left: 3px solid gray; padding-left: 1em;">'
-                        '转发@<a href={quote_author_url}>{quote_author_username}</a>：{quote_text}'
+                        '转发@<a href={quote_author_url}>{username}</a>：{quote_text}'
                         '</div>'
                         ).format(quote_author_url=TWITTER_USER_URL.format(uid=quote_author_username),
-                                 quote_author_username=quote_author_username,
+                                 username=quote_author_fullname,
                                  quote_text=format_status(quote_status_url, max_iter-1))
     description.replace(r'\n', '<br/>')
     media = permalink_tweet.find('div', class_='AdaptiveMediaOuterContainer')
@@ -100,13 +101,14 @@ def index(request, uid):
         'items': []
     }
     for item in b.find_all('item'):
-        logging.warning(item.link.text)
         item_url = item.link.text
+        logging.warning(item_url)
         feed_item = {
             'id': item_url,
             'url': item_url
         }
         if cache.get(item_url):
+            logging.warning('缓存'+item_url)
             feed_item['content_html'] = cache.get(item_url)
         else:
             description = format_twitter(uid, item_url)
