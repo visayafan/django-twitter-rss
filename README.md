@@ -22,4 +22,6 @@ Python版本为3.6，Django版本为2.1。
 
 我在heroku上建了个Demo，链接为 [https://django-twitter-rss.herokuapp.com](https://django-twitter-rss.herokuapp.com)，因为heroku每月有时长限制，所以每月最后几天可能不能使用。
 
-![](static/images/递归显示.png)
+## 截图
+
+![](static/images/图片显示.png)
