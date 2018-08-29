@@ -41,8 +41,9 @@ def convert_url(tweet_text):
 
 def format_status(url):
     bst = BeautifulSoup(requests.get(url).content, 'html.parser')
+    permalink_tweet = bst.find('div', class_='permalink-tweet-container')
     # 推特内容
-    tweet_text = bst.find('p', class_='tweet-text')
+    tweet_text = permalink_tweet.find('p', class_='tweet-text')
     hidden = tweet_text.find('a', class_='u-hidden')
     if hidden:
         hidden.extract()
@@ -50,20 +51,26 @@ def format_status(url):
     # 去掉最外层的div，否则若是转推会有换行
     description = ''.join(map(str, tweet_text.contents))
     # 引用推特内容
-    quote_author = bst.find('div', class_='QuoteTweet-originalAuthor')
+    quote_author = permalink_tweet.find('div', class_='QuoteTweet-originalAuthor')
     if quote_author:
-        quote_url = bst.find('a', class_='QuoteTweet-link')
+        quote_url = permalink_tweet.find('a', class_='QuoteTweet-link')
         quote_status_url = TWITTER_URL.format(quote_url.get('href'))
         quote_author_username = quote_author.find('span', class_='username').b.text
-        description += ('<div style="border-left: 3px solid gray; padding-left: 1em;"><br/><br/>'
+        description += ('<br/><br/><div style="border-left: 3px solid gray; padding-left: 1em;">'
                         '转发@<a href={quote_author_url}>{quote_author_username}</a>：{quote_text}'
                         '</div>'
                         ).format(quote_author_url=TWITTER_USER_URL.format(uid=quote_author_username),
                                  quote_author_username=quote_author_username,
                                  quote_text=format_status(quote_status_url))
     description.replace(r'\n', '<br/>')
-    media = bst.find('div', class_='AdaptiveMediaOuterContainer')
-    description += '<br/><br/>' + str(media)
+    media = permalink_tweet.find('div', class_='AdaptiveMediaOuterContainer')
+    if media:
+        # 图片前加两个换行
+        images = media.find_all('img')
+        if images:
+            for img in images:
+                img.replace_with('<br/><br/>' + str(img))
+        description += str(media)
     # 繁体转简体
     description = HanziConv.toSimplified(description)
     return description
