@@ -5,6 +5,8 @@ import requests
 from bs4 import BeautifulSoup
 from django.core.cache import cache
 from django.http import JsonResponse
+from django.shortcuts import render
+from django.urls import reverse
 from hanziconv import HanziConv
 
 TITLE_MAX_LENGTH = 30
@@ -102,24 +104,35 @@ def index(request, uid):
     feed = {
         'version': 'https://jsonfeed.org/version/1',
         'title': b.find('h1', class_='ProfileHeaderCard-name').text + '的推特',
-        'description': b.find('h2', class_='ProfileHeaderCard-bio'),
+        'description': b.find('p', class_='ProfileHeaderCard-bio'),
         'home_page_url': twitter_url,
         'items': []
     }
-    for item in b.find_all('li', class_='js-stream-item'):
-        item_url = TWITTER_STATUS_URL.format(uid, item.get('data-item-id'))
-        feed_item = {
-            'id': item_url,
-            'url': item_url
-        }
-        if cache.get(item_url):
-            logging.info('缓存' + item_url)
-            feed_item['content_html'] = cache.get(item_url)
-        else:
-            logging.info(item_url)
-            description = format_twitter(uid, item_url)
-            cache.set(item_url, description)
-            feed_item['content_html'] = description
-        feed_item['title'] = format_title(feed_item['content_html'])
-        feed['items'].append(feed_item)
+    lis = b.find_all('li', class_='js-stream-item')
+    if lis:
+        for item in lis:
+            item_url = TWITTER_STATUS_URL.format(uid, item.get('data-item-id'))
+            feed_item = {
+                'id': item_url,
+                'url': item_url
+            }
+            if cache.get(item_url):
+                logging.info('缓存' + item_url)
+                feed_item['content_html'] = cache.get(item_url)
+            else:
+                logging.info(item_url)
+                description = format_twitter(uid, item_url)
+                cache.set(item_url, description)
+                feed_item['content_html'] = description
+            feed_item['title'] = format_title(feed_item['content_html'])
+            feed['items'].append(feed_item)
     return JsonResponse(feed)
+
+
+def home(request):
+    url = None
+    origin_url = None
+    if request.method == 'POST':
+        origin_url = request.POST.get('url')
+        url = reverse('twitter', args=[origin_url.split('/')[3]])
+    return render(request, 'twitter/home.html', {'url': url, 'origin_url': origin_url})

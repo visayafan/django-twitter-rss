@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="renderer" content="webkit"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Twitter RSS订阅</title>
+    <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.0/css/bootstrap.min.css">
+    <style>
+        .content {
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 15px;
+        }
+
+        .head {
+            margin-top: 50px;
+        }
+
+        .intro {
+            margin-top: 30px;
+        }
+
+        .result {
+            margin-top: 20px;
+        }
+
+        .reader-list {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<html>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="content">
+            <div class="head">
+                <h2 class="text-center">django-twitter-rss</h2>
+                <p class="intro">优雅地使用 RSS 阅读器订阅喜欢的Twitter博主</p>
+                <p>1. 在输入框中粘贴你想订阅的Twitter地址<br>2. 点击“生成订阅地址”按钮</p>
+                <form action="." method="post" class="form">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        {% if origin_url %}
+                            <input type="text" class="form-control" name="url" value="{{ origin_url }}">
+                        {% else %}
+                            <input type="text" class="form-control" name="url" placeholder="https://twitter.com/heqinglian">
+                        {% endif %}
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" type="submit">生成订阅地址</button>
+                        </span>
+                    </div>
+                </form>
+            </div>
+            {% if url %}
+                <div class="result">
+                    <p>RSS订阅地址：</p>
+                    <div class="input-group">
+                        <input id="clip" type="text" class="form-control" name="url" readonly="true"/>
+                        <span class="input-group-btn">
+                            <button data-clipboard-target="#clip" class="btn btn-default" type="submit">复制到剪切板</button>
+                        </span>
+                    </div>
+                    <ul class="reader-list">
+                        <li><a id="inoreader" href="" target="_blank">订阅到Inoreader</a></li>
+                        <li><a id="feedly" href="" target="_blank">订阅到Feedly</a></li>
+                        <li><a id="theoldreader" href="" target="_blank">订阅到TheOldReader</a></li>
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<div class="navbar navbar-fixed-bottom">
+        <p class="text-mute text-center">Powered by <a href="https://github.com/visayafan/django-twitter-rss" target="_blank">django-twitter-rss</a>. Inspired by  <a href="https://github.com/zgq354/weibo-rss" target="_blank">weibo-rss</a>. .
+        </p>
+</div>
+</body>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script type='text/javascript' src="https://cdn.staticfile.org/clipboard.js/1.5.15/clipboard.min.js"></script>
+<script type='text/javascript'>
+    new Clipboard(".btn");
+
+    let prefix = {
+        inoreader: "https://www.inoreader.com/?add_feed=",
+        feedly: "https://feedly.com/i/subscription/",
+        theoldreader: "https://theoldreader.com/feeds/subscribe?url="
+    };
+
+    {% if url %}
+        let feed_url = new URL('{{ url }}', location.href).href;
+        $('#clip').val(feed_url);
+        for (let reader in prefix) {
+            $("#" + reader).attr("href", prefix[reader] + feed_url);
+        }
+    {% endif %}
+</script>
+<script>
+</script>
+</html>

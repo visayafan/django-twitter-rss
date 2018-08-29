@@ -3,5 +3,6 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('<str:uid>/', views.index)
+    path('', views.home),
+    path('twitter/<str:uid>/', views.index, name='twitter')
 ]
