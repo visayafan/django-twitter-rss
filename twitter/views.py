@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from django.http import JsonResponse
 
 TITLE_MAX_LENGTH = 30
+TWITTER_URL = 'https://twitter.com/{}'
 TWITTER_USER_URL = 'https://twitter.com/{uid}'
 TWITRSS_URL = 'https://twitrss.me/twitter_user_to_rss/?user={uid}'
 
@@ -49,17 +50,19 @@ def format_status(url):
     description = ''.join(map(str, tweet_text.contents))
     # 引用推特内容
     quote_author = bst.find('div', class_='QuoteTweet-originalAuthor')
-    quote_text = bst.find('div', class_='QuoteTweet-text')
     if quote_author:
-        quote_text = convert_url(quote_text)
+        quote_url = bst.find('a', class_='QuoteTweet-link')
+        quote_status_url = TWITTER_URL.format(quote_url.get('href'))
         quote_author_username = quote_author.find('span', class_='username').b.text
-        description += ('<div style="border-left: 3px solid gray; padding-left: 1em;">'
+        description += ('<div style="border-left: 3px solid gray; padding-left: 1em;"><br/><br/>'
                         '转发@<a href={quote_author_url}>{quote_author_username}</a>：{quote_text}'
                         '</div>'
                         ).format(quote_author_url=TWITTER_USER_URL.format(uid=quote_author_username),
                                  quote_author_username=quote_author_username,
-                                 quote_text=''.join(map(str, quote_text.contents)))
+                                 quote_text=format_status(quote_status_url))
     description.replace(r'\n', '<br/>')
+    media = bst.find('div', class_='AdaptiveMediaOuterContainer')
+    description += str(media)
     return description
 
 
