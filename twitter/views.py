@@ -79,6 +79,11 @@ def format_status(url, max_iter):
         if ts:
             ts.extract()
         description += '<br/>' + str(media).replace('<img', '<br/><img')
+    iframe = permalink_tweet.find('iframe')
+    if iframe:
+        body = iframe.find('body')
+        if body:
+            description += str(body)
     # 繁体转简体
     description = HanziConv.toSimplified(description)
     return description
