@@ -4,6 +4,7 @@ import re
 import requests
 from bs4 import BeautifulSoup
 from django.http import JsonResponse
+from hanziconv import HanziConv
 
 TITLE_MAX_LENGTH = 30
 TWITTER_URL = 'https://twitter.com/{}'
@@ -62,7 +63,9 @@ def format_status(url):
                                  quote_text=format_status(quote_status_url))
     description.replace(r'\n', '<br/>')
     media = bst.find('div', class_='AdaptiveMediaOuterContainer')
-    description += str(media)
+    description += '<br/><br/>' + str(media)
+    # 繁体转简体
+    description = HanziConv.toSimplified(description)
     return description
 
 
