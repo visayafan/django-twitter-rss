@@ -49,8 +49,12 @@ def format_status(url, max_iter):
     logging.info('正在抓取网页：' + url)
     bst = BeautifulSoup(requests.get(url).content, 'html.parser')
     permalink_tweet = bst.find('div', class_='permalink-tweet-container')
+    return format_container(permalink_tweet, max_iter)
+
+
+def format_container(container, max_iter):
     # 推特内容
-    tweet_text = permalink_tweet.find('p', class_='tweet-text')
+    tweet_text = container.find('p', class_='tweet-text')
     hidden = tweet_text.find('a', class_='u-hidden')
     if hidden:
         hidden.extract()
@@ -58,12 +62,12 @@ def format_status(url, max_iter):
     # 去掉最外层的div，否则若是转推会有换行
     description = ''.join(map(str, tweet_text.contents))
     # 引用推特内容
-    quote_author = permalink_tweet.find('div', class_='QuoteTweet-originalAuthor')
+    quote_author = container.find('div', class_='QuoteTweet-originalAuthor')
     if quote_author:
         if max_iter <= 0:
             description += '<br/>' * 2 + left_border.format('！！！警告：转发层数太深，请打开网页查看！！！')
         else:
-            quote_url = permalink_tweet.find('a', class_='QuoteTweet-link')
+            quote_url = container.find('a', class_='QuoteTweet-link')
             quote_status_url = TWITTER_URL.format(quote_url.get('href')[1:])
             quote_author_username = quote_author.find('span', class_='username').b.text
             quote_author_fullname = quote_author.find('b', class_='QuoteTweet-fullname').text
@@ -72,8 +76,8 @@ def format_status(url, max_iter):
                     quote_author_url=TWITTER_URL.format(quote_author_username),
                     username=quote_author_fullname,
                     quote_text=format_status(quote_status_url, max_iter - 1)))
-    description.replace(r'\n', '<br/>')
-    media = permalink_tweet.find('div', class_='AdaptiveMediaOuterContainer')
+    description = description.replace('\n', '<br/>')
+    media = container.find('div', class_='AdaptiveMediaOuterContainer')
     if media:
         # 去掉警告信息
         ts = media.find('div', class_='Tombstone')
@@ -85,17 +89,23 @@ def format_status(url, max_iter):
     return description
 
 
-def format_twitter(uid, url):
-    description = format_status(url, 4)
+def format_twitter(uid, item):
+    url = TWITTER_URL.format(item.div.get('data-permalink-path')[1:])
     # 纯转发
-    if url.split('/')[3] != uid:
-        description = '转发' + '<br/>' * 2 + left_border.format(
-            '@<a href={url}>{uid}</a>：{description}'.format(
-                uid=url.split('/')[3],
-                url=TWITTER_URL.format(uid),
+    uid_real = url.split('/')[3]
+    if uid_real != uid:
+        description = format_status(url, 4)
+        fullname = item.find('strong', class_='fullname').text
+        return '转发' + '<br/>' * 2 + left_border.format(
+            '@<a href={url}>{fullname}</a>：{description}'.format(
+                url=TWITTER_URL.format(uid_real),
+                fullname=fullname,
                 description=description)
         )
-    return description
+    else:
+        container = item.find('div', class_='content')
+        description = format_container(container, 4)
+        return description
 
 
 def index(request, uid):
@@ -111,7 +121,7 @@ def index(request, uid):
     lis = b.find_all('li', class_='js-stream-item')
     if lis:
         for item in lis:
-            item_url = TWITTER_STATUS_URL.format(uid, item.get('data-item-id'))
+            item_url = TWITTER_URL.format(item.div.get('data-permalink-path')[1:])
             feed_item = {
                 'id': item_url,
                 'url': item_url
@@ -121,7 +131,8 @@ def index(request, uid):
                 feed_item['content_html'] = cache.get(item_url)
             else:
                 logging.info(item_url)
-                description = format_twitter(uid, item_url)
+                description = format_twitter(uid, item)
+                # description = format_twitter(uid, item_url)
                 cache.set(item_url, description)
                 feed_item['content_html'] = description
             feed_item['title'] = format_title(feed_item['content_html'])
