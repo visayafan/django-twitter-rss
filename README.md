@@ -18,10 +18,6 @@ Python版本为3.6，Django版本为2.1。
 - 对于原样显示的链接进行隐藏，显示为`网页链接`。
 - 递归显示转发的推特。
 
-## Demo
-
-我在heroku上建了个Demo，链接为 [https://django-twitter-rss.herokuapp.com](https://django-twitter-rss.herokuapp.com)，因为heroku每月有时长限制，所以每月最后几天可能不能使用。
-
 ## 截图
 
 ![](static/images/图片显示.png)
