@@ -2,5 +2,3 @@ hanziconv==0.3.2
 Django==2.1
 requests==2.19.1
 beautifulsoup4==4.6.3
-whitenoise==4.0
-gunicorn==19.9.0
