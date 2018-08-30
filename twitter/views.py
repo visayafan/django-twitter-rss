@@ -132,7 +132,6 @@ def index(request, uid):
             else:
                 logging.info(item_url)
                 description = format_twitter(uid, item)
-                # description = format_twitter(uid, item_url)
                 cache.set(item_url, description)
                 feed_item['content_html'] = description
             feed_item['title'] = format_title(feed_item['content_html'])
