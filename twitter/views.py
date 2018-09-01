@@ -87,6 +87,18 @@ def format_container(container_tag, max_iter):
                     quote_author_url=TWITTER_URL.format(quote_author_username),
                     username=quote_author_fullname,
                     quote_text=format_status(quote_status_url, max_iter - 1)))
+    # 分享外部文章
+    iframe_tag = container_tag.find('div', class_='js-macaw-cards-iframe-container')
+    if iframe_tag:
+        src_url = TWITTER_URL.format(iframe_tag.get('data-src'))
+        logging.info('正在抓取文章Iframe：' + src_url)
+        iframe_bs = BeautifulSoup(requests.get(src_url).content, 'html.parser')
+        iframe_link_tag = iframe_bs.find('a', class_='js-openLink')
+        if iframe_link_tag:
+            iframe_title_tag = iframe_link_tag.find('h2', class_='TwitterCard-title')
+            if iframe_title_tag:
+                description += '<br/><a href="{}">{}</a>'.format(iframe_link_tag['href'], iframe_title_tag.text)
+
     # 推文后跟图片或视频
     media_tag = container_tag.find('div', class_='AdaptiveMediaOuterContainer')
     if media_tag:
@@ -95,8 +107,6 @@ def format_container(container_tag, max_iter):
         if ts_tag:
             ts_tag.decompose()
         description += '<br/>' + str(media_tag).replace('<img', '<br/><img')
-    # 繁体转简体
-    description = HanziConv.toSimplified(description)
     return description
 
 
@@ -122,9 +132,11 @@ def format_twitter(uid, item):
 def index(request, uid):
     twitter_url = TWITTER_URL.format(uid)
     b = BeautifulSoup(requests.get(twitter_url).content, 'html.parser')
+    username = b.find('h1', class_='ProfileHeaderCard-name').text
+    username = username.replace('Verified account', '')
     feed = {
         'version': 'https://jsonfeed.org/version/1',
-        'title': b.find('h1', class_='ProfileHeaderCard-name').text + '的推特',
+        'title': username + '的推特',
         'description': b.find('p', class_='ProfileHeaderCard-bio').text,
         'home_page_url': twitter_url,
         'items': []
@@ -143,6 +155,8 @@ def index(request, uid):
             else:
                 logging.info(item_url)
                 description = format_twitter(uid, item_tag)
+                # 繁体转简体
+                description = HanziConv.toSimplified(description)
                 cache.set(item_url, description, CACHE_TTL)
                 feed_item['content_html'] = description
             feed_item['title'] = format_title(feed_item['content_html'])
@@ -155,5 +169,5 @@ def home(request):
     origin_url = None
     if request.method == 'POST':
         origin_url = request.POST.get('url')
-        url = reverse('twitter', args=[origin_url.split('/')[3]])
+        url = 'http://' + request.META['HTTP_HOST'] + reverse('twitter', args=[origin_url.split('/')[3]])
     return render(request, 'twitter/home.html', {'url': url, 'origin_url': origin_url})
